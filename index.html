@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Almoxarifado – Painel Operacional</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f7f6;--card:#fff;--text:#17221d;--muted:#6c7771;--line:#dfe7e2;--primary:#176b4b;--primary2:#0f5238;--green:#138a52;--yellow:#d99a00;--orange:#e86f17;--red:#c63838;--gray:#718096;--shadow:0 8px 24px rgba(22,43,32,.08)}
+[data-theme="dark"]{--bg:#121816;--card:#1b2420;--text:#edf5f0;--muted:#9aa8a0;--line:#304038;--primary:#36a876;--primary2:#25845a;--shadow:0 8px 24px rgba(0,0,0,.25)}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.app{display:flex;min-height:100vh}.sidebar{width:260px;background:linear-gradient(180deg,var(--primary2),#0b3425);color:#fff;padding:22px 14px;position:fixed;height:100vh;z-index:5}.brand{font-weight:800;font-size:18px;padding:10px 12px 25px}.brand small{display:block;font-size:11px;opacity:.7;margin-top:5px}.nav button{width:100%;border:0;background:transparent;color:#d7eee3;text-align:left;padding:13px 14px;border-radius:12px;margin:3px 0;cursor:pointer;font-size:14px}.nav button:hover,.nav button.active{background:rgba(255,255,255,.14);color:#fff}.main{margin-left:260px;width:calc(100% - 260px);padding:24px;max-width:1600px}.topbar{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--line)}.topbar h1{margin:0;font-size:26px;letter-spacing:-.4px}.theme-btn,.btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;background:var(--primary);color:#fff;font-weight:700}.btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--line)}.btn.danger{background:var(--red)}.btn.warning{background:var(--yellow)}.screen{display:none}.screen.active{display:block}.grid-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}.kpi,.card{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px}.kpi{padding:18px 19px;min-height:104px;display:flex;flex-direction:column;justify-content:center;border-top:3px solid var(--primary)}.kpi:nth-child(3){border-top-color:var(--yellow)}.kpi:nth-child(4){border-top-color:#3b82f6}.kpi .label{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.3px}.kpi .value{font-size:30px;font-weight:800;margin-top:9px}.card{padding:20px;margin-bottom:18px}.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.chart-card{min-height:350px;display:flex;flex-direction:column}.chart-card h3{margin-bottom:14px}.chart-card canvas{max-height:275px;width:100%!important}.card h2,.card h3{margin-top:0}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.toolbar input,.toolbar select,input,select,textarea{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px}.toolbar input{min-width:220px}.table-wrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;font-size:13px}th{position:sticky;top:0;background:var(--card);z-index:1;text-align:left}th,td{padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}td input{width:100%;min-width:90px;padding:7px}.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}.ok{background:rgba(19,138,82,.14);color:var(--green)}.sem{background:rgba(198,56,56,.12);color:var(--red)}.day15{background:#fff1bd;color:#8a6200}.day31{background:#ffe0bf;color:#a84900}.day61{background:#ffd0d0;color:#a31313}.muted{color:var(--muted)}.empty{text-align:center;padding:35px;color:var(--muted)}.actions{display:flex;gap:6px}.smallbtn{padding:6px 8px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:7px;cursor:pointer}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.wide{grid-column:span 2}.alert-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.critical{border-left:6px solid var(--red)}.attention{border-left:6px solid var(--yellow)}.search-hero{padding:25px;background:linear-gradient(135deg,var(--primary2),var(--primary));color:#fff;border-radius:18px}.search-hero input{width:100%;font-size:19px;margin-top:15px;background:#fff;color:#17221d}.footer{font-size:12px;color:var(--muted);padding:12px 0}.mobile-title{display:none}
+@media(max-width:1050px){.grid-kpi{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.sidebar{width:100%;height:auto;position:fixed;bottom:0;top:auto;padding:7px;display:flex;overflow-x:auto}.brand{display:none}.nav{display:flex;width:max-content}.nav button{min-width:120px;font-size:11px;padding:9px}.main{margin:0;width:100%;padding:16px 12px 90px}.charts,.two-col,.alert-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.topbar h1{font-size:19px}.chart-card{min-height:315px}}
+@media(max-width:560px){.grid-kpi{grid-template-columns:1fr}.topbar{align-items:flex-start}.theme-btn{padding:9px;font-size:12px}}
+
+/* Estoque virtual: interface operacional simplificada */
+.stock-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}.stock-head h2{font-size:21px;margin:0 0 5px}.stock-head p{margin:0;color:var(--muted);font-size:13px}.stock-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}.stock-stat{border:1px solid var(--line);background:var(--card);border-radius:13px;padding:16px}.stock-stat strong{display:block;font-size:26px;letter-spacing:-.6px}.stock-stat span{font-size:12px;color:var(--muted)}.stock-controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.stock-controls .stock-search{flex:2;min-width:230px}.stock-controls select{flex:1;min-width:125px}.stock-extra{margin:12px 0}.stock-extra summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:650}.stock-extra .toolbar{margin-top:12px}.stock-actions{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin:17px 0}.stock-actions .toolbar{margin:0}.stock-selection-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:color-mix(in srgb,var(--primary) 8%,var(--card));border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:14px}.stock-selection-bar strong{font-size:13px}.stock-list{overflow-x:auto;border:1px solid var(--line);border-radius:12px}.stock-list table{min-width:680px}.stock-list th{background:var(--bg);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px}.stock-list td{padding:15px 12px}.stock-list tbody tr:hover{background:color-mix(in srgb,var(--primary) 5%,var(--card))}.stock-list tbody tr.is-selected{background:color-mix(in srgb,var(--primary) 9%,var(--card))}.stock-product{font-weight:700;white-space:normal;min-width:220px;max-width:410px;line-height:1.4}.stock-sub{font-size:11px;color:var(--muted);margin-top:5px}.stock-qty{font-size:17px;font-weight:800}.stock-empty{padding:46px 18px;text-align:center;color:var(--muted)}.stock-empty strong{display:block;color:var(--text);font-size:16px;margin-bottom:8px}.stock-check{width:17px;height:17px;accent-color:var(--primary);cursor:pointer}.stock-more{display:flex;gap:6px;justify-content:flex-end}.stock-more button{font-size:12px}.stock-foot{font-size:12px;color:var(--muted);margin-top:12px}.stock-edit-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.64);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}.stock-edit-backdrop.open{display:flex}.stock-edit-dialog{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;width:min(650px,100%);max-height:90vh;overflow:auto;box-shadow:0 25px 80px rgba(0,0,0,.25)}.stock-edit-dialog h2{margin:0 0 6px}.stock-edit-dialog p{color:var(--muted);font-size:13px;margin:0 0 20px}.stock-edit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.stock-edit-fields label{font-size:12px;font-weight:700;color:var(--muted)}.stock-edit-fields input{width:100%;margin-top:6px}.stock-edit-fields .full{grid-column:span 2}.stock-edit-footer{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:22px}.stock-batch-card{border:1px solid var(--primary);background:var(--card);border-radius:16px;padding:20px;margin-top:18px}.stock-batch-card h3{margin:0 0 6px}.stock-batch-card p{font-size:13px;color:var(--muted);margin:0 0 15px}.stock-batch-card .table-wrap{max-height:350px}.stock-batch-card input[type=number]{min-width:105px}.stock-help{font-size:12px;color:var(--muted);margin:7px 0 0}
+@media(max-width:700px){.stock-stats{grid-template-columns:repeat(3,1fr);gap:7px}.stock-stat{padding:12px 9px}.stock-stat strong{font-size:21px}.stock-stat span{font-size:10px}.stock-edit-fields{grid-template-columns:1fr}.stock-edit-fields .full{grid-column:auto}.stock-head{align-items:flex-start}.stock-actions{align-items:flex-start}.stock-selection-bar{align-items:flex-start}.stock-edit-dialog{padding:17px}}
+
+/* Estoque agrupado em seções de planilha, sem campos editáveis permanentes */
+.stock-list{display:block!important;overflow:visible!important;max-height:none!important;border:0!important;background:transparent!important}
+.stock-group-section{margin:0 0 22px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.stock-group-header{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#145b3b;color:#fff;padding:13px 18px}
+.stock-group-header>div{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.stock-group-name{font-size:23px;font-weight:850;letter-spacing:.24em;line-height:1.1}
+.stock-group-subtitle{font-size:12px;color:#d2e9db;letter-spacing:0}
+.stock-group-select{border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-weight:650}
+.stock-group-select:hover{background:rgba(255,255,255,.23)}
+.stock-group-scroll{overflow-x:auto;width:100%}
+.stock-group-table{width:100%;min-width:1260px;border-collapse:collapse;font-size:12px}
+.stock-group-table th{background:var(--bg);font-size:11px;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);padding:11px 10px}
+.stock-group-table td{padding:10px;vertical-align:middle;white-space:nowrap;border-bottom:1px solid var(--line)}
+.stock-group-table tbody tr:hover{background:rgba(35,145,93,.06)}
+.stock-group-table .stock-description{white-space:normal;min-width:260px;max-width:420px;font-weight:600}
+.stock-group-table .stock-code{font-variant-numeric:tabular-nums}
+.stock-group-table .stock-numeric{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.stock-group-table .stock-observation{max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.stock-group-table .stock-more{display:flex;gap:5px;justify-content:flex-end}
+.stock-group-table .stock-more button{white-space:nowrap}
+@media(max-width:700px){.stock-group-name{font-size:19px}.stock-group-header{padding:12px}.stock-group-subtitle{font-size:11px}}
+
+/* Hierarquia: grupo > patrimônio > notas > consolidação */
+.patrimony-card{margin:13px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.patrimony-heading{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;padding:14px 16px;background:color-mix(in srgb,var(--primary) 9%,var(--card));color:var(--text);border:0;cursor:pointer;font:inherit}
+.patrimony-heading strong{font-size:17px}.patrimony-heading small{display:block;color:var(--muted);margin-top:4px}.patrimony-body{padding:12px}.note-block{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px}.note-title{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;background:var(--bg);font-weight:700}.note-title small{color:var(--muted);font-weight:400}.note-block .stock-group-scroll{max-height:none}.summary-block{border:1px solid var(--primary);border-radius:10px;overflow:hidden;margin-top:16px}.summary-heading{background:color-mix(in srgb,var(--primary) 12%,var(--card));padding:13px 15px;font-weight:800}.summary-table{width:100%;min-width:650px}.summary-table th,.summary-table td{padding:11px}.summary-total{padding:12px 15px;text-align:right;font-weight:800;background:var(--bg)}.summary-warning{font-size:12px;color:var(--muted);padding:9px 14px}.note-block .stock-group-table{min-width:1260px}
+.entry-date-label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:700;color:var(--muted)}.entry-date-label input{width:100%;min-height:40px;font-size:14px}
+/* Consulta de mercadorias: grupos > patrimônios > notas fiscais */
+.query-results{margin-top:18px;display:grid;gap:18px}.query-group{border:1px solid var(--line);border-radius:13px;overflow:hidden}.query-group-title{background:#145b3b;color:white;padding:13px 17px;font-weight:800;letter-spacing:.07em;display:flex;justify-content:space-between;gap:12px}.query-patrimony{padding:15px;border-top:1px solid var(--line)}.query-patrimony-title{font-size:17px;font-weight:800;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}.query-nf{border:1px solid var(--line);border-radius:10px;margin:9px 0;background:var(--card);overflow:hidden}.query-nf summary{cursor:pointer;list-style:none;padding:13px;display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr auto;align-items:center;gap:12px}.query-nf summary::-webkit-details-marker{display:none}.query-nf summary:hover{background:color-mix(in srgb,var(--primary) 7%,var(--card))}.query-nf summary:after{content:'▾';color:var(--muted)}.query-nf[open] summary:after{content:'▴'}.query-field{min-width:0}.query-field small{display:block;font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;font-weight:700}.query-field strong{font-size:13px;overflow-wrap:anywhere}.query-nf-body{padding:0 12px 12px;overflow:auto}.query-nf-body table{min-width:560px}.query-age{display:inline-block;border-radius:7px;padding:5px 8px;background:rgba(19,138,82,.13);color:var(--green)}.query-age.old{background:rgba(198,56,56,.13);color:var(--red)}.query-empty{text-align:center;padding:35px;color:var(--muted)}@media(max-width:750px){.query-nf summary{grid-template-columns:1fr 1fr}.query-nf summary:after{display:none}}
+
+/* V6 — tema escuro permanente e dashboard premium */
+:root,[data-theme="dark"]{color-scheme:dark;--bg:#0c1210;--card:#151f1b;--text:#f0f7f2;--muted:#9eb2a8;--line:#2a3c33;--primary:#2fa676;--primary2:#207e59;--green:#4cd59b;--shadow:0 12px 38px rgba(0,0,0,.19)}
+body{background:radial-gradient(ellipse at 70% -20%,rgba(39,133,92,.13),transparent 45%),var(--bg)}
+.sidebar{background:linear-gradient(165deg,#143f2e 0%,#102b22 48%,#0b2019 100%);border-right:1px solid #29483a;padding:25px 14px}
+.brand{font-size:19px;letter-spacing:.02em;padding:12px 12px 32px}.brand small{font-weight:500;letter-spacing:.13em;margin-top:8px}
+.nav button{margin:5px 0;padding:14px 15px;transition:background .2s,transform .2s}.nav button:hover{transform:translateX(2px)}.nav button.active{background:linear-gradient(90deg,rgba(57,170,119,.28),rgba(57,170,119,.09));box-shadow:inset 3px 0 #4fdb9c}
+.main{padding:29px 30px 35px;max-width:none}.topbar{margin-bottom:27px;padding-bottom:20px}.topbar h1{font-size:23px;font-weight:800;letter-spacing:.015em}
+.theme-locked{display:inline-flex;align-items:center;gap:8px;color:#b5e5ca;border:1px solid #2e5d47;background:#17372a;padding:10px 14px;border-radius:30px;font-size:11px;letter-spacing:.08em;font-weight:750;white-space:nowrap}
+.dash-intro{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:28px 30px;margin-bottom:21px;background:linear-gradient(110deg,#1a4b36,#1b382e 70%,#182a23);border:1px solid #32654d;border-radius:20px;box-shadow:0 18px 40px rgba(0,0,0,.14)}
+.dash-eyebrow{font-size:10px;font-weight:800;letter-spacing:.17em;color:#7ee1ad}.dash-intro h2{font-size:26px;line-height:1.2;letter-spacing:-.5px;margin:9px 0}.dash-intro p{margin:0;color:#c1d8ca;font-size:13px;line-height:1.6}
+.dash-live{display:flex;align-items:center;gap:8px;white-space:nowrap;color:#d4f4df;font-size:12px;background:rgba(5,25,14,.25);padding:10px 14px;border:1px solid rgba(149,221,172,.2);border-radius:30px}.live-dot{width:7px;height:7px;background:#6ce3a3;border-radius:50%;box-shadow:0 0 0 4px rgba(108,227,163,.12)}
+#dashboard .grid-kpi{gap:15px;margin-bottom:30px}#dashboard .kpi{position:relative;overflow:hidden;min-height:137px;padding:22px 21px;background:linear-gradient(150deg,#1b2922,#141f1a);border:1px solid #2b4135;border-top:0;box-shadow:0 12px 26px rgba(0,0,0,.12)}
+#dashboard .kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#42c78a}#dashboard .kpi:nth-child(3):before{background:#f0af4d}#dashboard .kpi:nth-child(4):before{background:#6ba9ec}
+#dashboard .kpi .label{font-size:11px;letter-spacing:.07em;color:#a8bfb1;max-width:80%}#dashboard .kpi .value{font-size:36px;line-height:1.1;margin-top:15px;font-variant-numeric:tabular-nums}#dashboard .kpi-symbol{position:absolute;top:19px;right:19px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#254534;color:#78dba6;font-size:19px;font-weight:800}#dashboard .kpi:nth-child(3) .kpi-symbol{background:#4b3925;color:#f0bd71}#dashboard .kpi:nth-child(4) .kpi-symbol{background:#22394c;color:#9bc8ed}
+.dash-section-heading{display:flex;align-items:end;justify-content:space-between;gap:15px;margin-bottom:16px}.dash-section-heading h3{font-size:19px;margin:7px 0 0}.dash-section-heading>span{font-size:12px;color:var(--muted)}
+#dashboard .charts{gap:17px}#dashboard .chart-card{min-height:355px;border:1px solid #2b4035;background:linear-gradient(150deg,#19251f,#141e1a);padding:23px 23px 18px;border-radius:17px}#dashboard .chart-card h3{font-size:14px;font-weight:750;letter-spacing:.015em;margin-bottom:20px}#dashboard .footer{margin-top:12px;font-size:11px;color:#839c8e}
+.btn{transition:filter .2s,transform .2s}.btn:hover{filter:brightness(1.1)}.card{border-color:#2b3e34}
+@media(max-width:1100px){.dash-live{display:none}}@media(max-width:900px){.main{padding:18px 14px 90px}.dash-intro{padding:21px}.dash-intro h2{font-size:22px}.theme-locked{font-size:9px;padding:8px}}@media(max-width:560px){.dash-section-heading>span{display:none}.dash-intro h2{font-size:20px}#dashboard .kpi{min-height:110px}#dashboard .kpi .value{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar"><div class="brand">ALMOXARIFADO<small>PAINEL OPERACIONAL</small></div>
+<nav class="nav">
+<button class="active" data-screen="dashboard">📊 Painel Operacional</button>
+<button data-screen="estoque">📦 Estoque Virtual</button>
+<button data-screen="antigas">🕒 Peças Antigas</button>
+<button data-screen="entrada">➕ Cadastro de Entrada</button>
+<button data-screen="consulta">🔎 Consulta de Mercadorias</button>
+</nav></aside>
+<main class="main">
+<div class="topbar"><h1 id="pageTitle">PAINEL OPERACIONAL DO ALMOXARIFADO</h1><span class="theme-locked">● SISTEMA OPERACIONAL</span></div>
+
+<section id="dashboard" class="screen active">
+<div class="dash-intro"><div><span class="dash-eyebrow">VISÃO GERAL DO ALMOXARIFADO</span><h2>Controle inteligente do estoque</h2><p>Acompanhe saldos, recebimentos e tempo de permanência das mercadorias.</p></div><span class="dash-live"><span class="live-dot"></span> Indicadores atualizados</span></div>
+<div class="grid-kpi">
+<div class="kpi"><span class="kpi-symbol">▦</span><div class="label">TOTAL EM ESTOQUE</div><div class="value" id="kpiTotal">0</div></div>
+<div class="kpi"><span class="kpi-symbol">✓</span><div class="label">REGISTROS COM SALDO</div><div class="value" id="kpiSaldo">0</div></div>
+<div class="kpi"><span class="kpi-symbol">◷</span><div class="label">PEÇAS ANTIGAS – 15+ DIAS</div><div class="value" id="kpiAntigas">0</div></div>
+<div class="kpi"><span class="kpi-symbol">↘</span><div class="label">ENTRADAS DO MÊS</div><div class="value" id="kpiMes">0</div></div>
+</div>
+<div class="dash-section-heading"><div><span class="dash-eyebrow">ANÁLISE OPERACIONAL</span><h3>Movimentação e permanência</h3></div><span>Visão por grupo e período</span></div>
+<div class="charts">
+<div class="card chart-card"><h3>Peças antigas por grupo</h3><canvas id="chartOldGroup"></canvas></div>
+<div class="card chart-card"><h3>Entradas por mês: atual × anterior</h3><canvas id="chartMonths"></canvas></div>
+<div class="card chart-card"><h3>Entradas do mês por grupo</h3><canvas id="chartMonthGroup"></canvas></div>
+<div class="card chart-card"><h3>Faixa de envelhecimento</h3><canvas id="chartAge"></canvas></div>
+</div>
+<div class="footer">Dados atualizados automaticamente somente a partir da tabela atual do Estoque Virtual.</div>
+</section>
+
+<section id="estoque" class="screen">
+<div class="stock-head"><div><h2>Controle de produtos</h2><p>Consulte os saldos, encontre peças e registre retiradas com segurança.</p></div><button class="btn" onclick="addStockRow()">+ Novo produto</button></div>
+<div class="stock-stats"><div class="stock-stat"><strong id="stockStatTotal">0</strong><span>Produtos cadastrados</span></div><div class="stock-stat"><strong id="stockStatWith">0</strong><span>Com saldo</span></div><div class="stock-stat"><strong id="stockStatWithout">0</strong><span>Sem saldo</span></div></div>
+<div class="card">
+<div class="stock-controls"><input class="stock-search" id="stockSearch" placeholder="🔎 Buscar produto, código, NF ou patrimônio" oninput="renderStock()" aria-label="Buscar produtos"><select id="stockGroup" onchange="renderStock()"><option value="">Todos os grupos</option><option>MAQ</option><option>IMP</option><option>VEC</option><option>OUTROS</option></select><select id="stockStatus" onchange="renderStock()"><option value="">Todos os saldos</option><option value="Com saldo">Com saldo</option><option value="Sem saldo">Sem saldo</option></select></div>
+<details class="stock-extra"><summary>Mais filtros · Período de recebimento</summary><div class="toolbar"><label>De <input id="stockFrom" type="date" onchange="renderStock()"></label><label>Até <input id="stockTo" type="date" onchange="renderStock()"></label><button class="btn secondary" onclick="clearStockFilters()">Limpar filtros</button></div></details>
+<div class="stock-actions"><strong>Produtos no estoque</strong><div class="toolbar"><button class="btn secondary" onclick="document.getElementById('importFile').click()">Importar planilha</button><button class="btn secondary" onclick="exportStock('xlsx')">Exportar Excel</button><button class="btn secondary" onclick="exportStock('csv')">CSV</button><input id="importFile" type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importFile(event)"></div></div>
+<div class="stock-selection-bar"><label style="display:flex;align-items:center;gap:8px;font-size:13px"><input id="stockSelectAll" class="stock-check" type="checkbox" onchange="toggleAllVisibleStock(this.checked)"> Selecionar todos com saldo (na lista)</label><strong id="selectedStockCount">0 itens selecionados</strong><button class="btn" id="batchActionButton" onclick="openBatchWithdrawal()" disabled>📤 Dar baixa nos selecionados</button><button class="btn secondary" onclick="clearStockSelection()">Limpar seleção</button></div>
+<div class="stock-list" id="stockTable"></div><div class="stock-foot" id="stockListFoot"></div>
+<div id="batchWithdrawalPanel" class="stock-batch-card" style="display:none"><h3>Conferir baixa dos produtos</h3><p>Passo final: informe quem está retirando e confira a quantidade de cada produto. Nenhuma baixa será realizada antes da confirmação.</p><div class="toolbar"><input id="batchWho" placeholder="Quem retirou? (obrigatório)" style="min-width:240px"><input id="batchReason" placeholder="Observação (opcional)" style="min-width:230px"></div><div class="table-wrap" id="batchWithdrawalTable"></div><p class="stock-help">A quantidade sugerida é o saldo total. Você pode diminuir para fazer uma baixa parcial.</p><div class="toolbar" style="margin-top:14px"><button class="btn" onclick="confirmBatchWithdrawal()">✓ Confirmar baixas</button><button class="btn secondary" onclick="closeBatchWithdrawal()">Cancelar</button></div></div>
+</div>
+<div id="stockEditModal" class="stock-edit-backdrop" role="dialog" aria-modal="true" aria-labelledby="stockEditTitle" onclick="if(event.target===this)closeStockEditor()"><div class="stock-edit-dialog"><h2 id="stockEditTitle">Editar produto</h2><p>Altere somente os campos necessários e clique em Salvar alterações.</p><div id="stockEditFields" class="stock-edit-fields"></div><div class="stock-edit-footer"><button class="btn secondary" onclick="closeStockEditor()">Cancelar</button><button class="btn" onclick="saveStockEditor()">Salvar alterações</button></div></div></div>
+</section>
+
+<section id="antigas" class="screen">
+<div class="card"><h2>PEÇAS ANTIGAS — 15+ DIAS SEM RETIRADA</h2><p class="muted">Itens com saldo, recebidos há pelo menos 15 dias e sem informação de retirada.</p>
+<div class="toolbar"><select id="oldGroup" onchange="renderOld()"><option value="">Todos os grupos</option><option>MAQ</option><option>IMP</option><option>VEC</option><option>OUTROS</option></select><input id="oldSearch" placeholder="Buscar peça, código, patrimônio..." oninput="renderOld()"><button class="btn secondary" onclick="exportOld()">Exportar XLSX</button></div>
+<div class="table-wrap" id="oldTable"></div></div>
+</section>
+
+<section id="entrada" class="screen">
+<div class="card">
+<h2>CADASTRO DE ENTRADA</h2>
+<div class="form-grid">
+<input id="entryPatrimonio" placeholder="Patrimônio (ex.: MAQ4525)">
+<input id="entryNF" placeholder="Número da NF">
+<input id="entrySolicitante" placeholder="Solicitante">
+<label class="entry-date-label" for="entryDate">📅 Data de recebimento <input id="entryDate" type="date" required></label>
+</div>
+</div>
+<div class="card">
+<h2>⚡ ENTRADA RÁPIDA POR CÓPIA DA NOTA</h2>
+<p class="muted">Copie as linhas da nota fiscal ou de uma planilha e cole abaixo. O sistema identifica códigos e quantidades e tenta completar descrição, unidade e armazém pelo catálogo de produtos de referência.</p>
+<textarea id="pastedItems" rows="9" style="width:100%;resize:vertical;font-family:ui-monospace,Consolas,monospace" placeholder="Cole aqui os itens da nota fiscal...&#10;229538    H229538    PROTEÇÃO FACA H229538 JDEERE    4&#10;778812    JD778812   CORREIA DE TRANSMISSÃO         2"></textarea>
+<div class="toolbar" style="margin-top:12px">
+<button class="btn" onclick="processPastedItems()">⚡ Processar itens colados</button>
+<button class="btn secondary" onclick="clearPastedItems()">Limpar área</button>
+</div>
+<div id="processMessage" class="muted" aria-live="polite"></div>
+</div>
+<div class="card">
+<h2>ITENS PROCESSADOS</h2>
+<p class="muted">Confira os dados antes de confirmar. Quando um código existir no catálogo, os campos disponíveis serão preenchidos automaticamente.</p>
+<div class="table-wrap" id="entryTable"></div>
+<div class="toolbar" style="margin-top:12px">
+<button class="btn secondary" onclick="addEntryLine()">+ Adicionar linha manualmente</button>
+<button class="btn" onclick="saveEntries()">✓ Confirmar recebimento</button>
+</div>
+</div>
+<div class="card">
+<h2>PRODUTOS DE REFERÊNCIA</h2>
+<input id="refSearch" placeholder="Pesquisar catálogo..." oninput="renderRefs()" style="width:100%;margin-bottom:12px">
+<div class="table-wrap" id="refsTable"></div>
+</div>
+</section>
+
+<section id="consulta" class="screen">
+<div class="stock-head"><div><h2>Consulta de mercadorias</h2><p>Acompanhe as notas e as mercadorias que permanecem no almoxarifado, organizadas por patrimônio.</p></div></div>
+<div class="stock-stats"><div class="stock-stat"><strong id="queryPatCount">0</strong><span>Patrimônios com mercadorias</span></div><div class="stock-stat"><strong id="queryNFCount">0</strong><span>Notas fiscais com saldo</span></div><div class="stock-stat"><strong id="queryItemCount">0</strong><span>Produtos com saldo</span></div></div>
+<div class="card"><div class="stock-controls"><input class="stock-search" id="quickSearch" placeholder="🔎 Buscar patrimônio, NF, solicitante ou produto" oninput="renderQuick()"><select id="queryGroup" onchange="renderQuick()"><option value="">Todos os grupos</option><option>MAQ</option><option>IMP</option><option>VEC</option><option>OUTROS</option></select><select id="queryAge" onchange="renderQuick()"><option value="">Qualquer período</option><option value="15">15 dias ou mais</option><option value="30">30 dias ou mais</option><option value="60">60 dias ou mais</option></select></div><p class="stock-help">Somente mercadorias com saldo disponível. Clique em uma nota fiscal para consultar seus produtos.</p><div id="quickTable" class="query-results"></div></div>
+</section>
+
+</main></div>
+
+<script>
+const DBKEY='almoxarifado_operacional_v2';
+const br=n=>new Intl.NumberFormat('pt-BR',{maximumFractionDigits:2}).format(Number(n||0));
+const today=()=>new Date().toISOString().slice(0,10);
+function parseNum(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return isFinite(v)?v:0;let s=String(v).trim().replace(/\s/g,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(',','.');return Number(s)||0}
+function parseDate(v){if(!v)return null;if(v instanceof Date&&!isNaN(v))return new Date(v.getFullYear(),v.getMonth(),v.getDate());if(typeof v==='number'&&window.XLSX){const d=XLSX.SSF.parse_date_code(v);if(d)return new Date(d.y,d.m-1,d.d)}let s=String(v).trim();let m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);let d=new Date(s);return isNaN(d)?null:new Date(d.getFullYear(),d.getMonth(),d.getDate())}
+function dateISO(v){let d=parseDate(v);return d?d.toISOString().slice(0,10):''}
+function dateBR(v){let d=parseDate(v);return d?d.toLocaleDateString('pt-BR'):'—'}
+function clean(v){return String(v??'').trim()}
+function groupOf(p){let x=clean(p).toUpperCase().slice(0,3);return ['MAQ','IMP','VEC'].includes(x)?x:'OUTROS'}
+function isSeparator(r){let n=clean(r.nome_produto).toUpperCase().replace(/\s/g,'');return ['MAQ','IMP','VEC','OUTROS'].includes(n)}
+function valid(r){return !isSeparator(r)&&clean(r.patrimonio)&&clean(r.nome_produto)&&(clean(r.cod_int)||clean(r.cod_equivalente))}
+function status(r){return parseNum(r.qntd)>0?'Com saldo':'Sem saldo'}
+function daysOld(r){let d=parseDate(r.data_recebimento);if(!d)return null;let t=new Date();t.setHours(0,0,0,0);return Math.floor((t-d)/86400000)}
+const initial={
+stock:[],
+refs:[],
+oils:[]
+};
+let db=(()=>{try{const saved=JSON.parse(localStorage.getItem(DBKEY)||'null');return saved&&Array.isArray(saved.stock)&&Array.isArray(saved.refs)&&Array.isArray(saved.oils)?saved:structuredClone(initial)}catch(e){return structuredClone(initial)}})();
+let charts={};
+const stockSelection=new Set();
+let batchWithdrawalDraft=[];
+function save(){localStorage.setItem(DBKEY,JSON.stringify(db))}
+function oldPieces(){return db.stock.filter(r=>valid(r)&&parseNum(r.qntd)>0&&parseDate(r.data_recebimento)&&daysOld(r)>=15&&!clean(r.retirado)).sort((a,b)=>daysOld(b)-daysOld(a))}
+function header(cols){return '<table><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'}
+function oldRows(rows){if(!rows.length)return '<div class="empty">Nenhum item encontrado.</div>';return header(['Patrimônio','Código','Peça','Unidades','Recebimento','Dias sem retirada','Observação'])+rows.map(r=>{let d=daysOld(r),cl=d>=61?'day61':d>=31?'day31':'day15';return `<tr><td>${clean(r.patrimonio)}</td><td>${clean(r.cod_int)||clean(r.cod_equivalente)}</td><td>${clean(r.nome_produto)}</td><td>${br(r.qntd)}</td><td>${dateBR(r.data_recebimento)}</td><td><span class="badge ${cl}">${d} dias</span></td><td>${clean(r.observacao)}</td></tr>`}).join('')+'</tbody></table>'}
+function renderDashboard(){let rows=db.stock.filter(valid), olds=oldPieces(), now=new Date(), month=now.getMonth(),year=now.getFullYear();
+document.getElementById('kpiTotal').textContent=br(rows.reduce((s,r)=>s+parseNum(r.qntd),0));
+document.getElementById('kpiSaldo').textContent=rows.filter(r=>parseNum(r.qntd)>0).length;
+document.getElementById('kpiAntigas').textContent=br(olds.reduce((s,r)=>s+parseNum(r.qntd),0));
+document.getElementById('kpiMes').textContent=br(rows.filter(r=>{let d=parseDate(r.data_recebimento);return d&&d.getMonth()==month&&d.getFullYear()==year&&parseNum(r.qntd)>0}).reduce((s,r)=>s+parseNum(r.qntd),0));
+
+let groups=['MAQ','IMP','VEC','OUTROS'], sumGroup=list=>groups.map(g=>list.filter(r=>groupOf(r.patrimonio)==g).reduce((s,r)=>s+parseNum(r.qntd),0));
+draw('chartOldGroup','bar',{labels:groups,datasets:[{label:'Unidades',data:sumGroup(olds),backgroundColor:['#176b4b','#3b82f6','#8b5cf6','#64748b']}]});
+let labels=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+let sums=y=>labels.map((_,m)=>rows.filter(r=>{let d=parseDate(r.data_recebimento);return d&&d.getFullYear()==y&&d.getMonth()==m}).reduce((s,r)=>s+parseNum(r.qntd),0));
+draw('chartMonths','line',{labels,datasets:[{label:String(year),data:sums(year),borderColor:'#176b4b',backgroundColor:'rgba(23,107,75,.15)',tension:.3},{label:String(year-1),data:sums(year-1),borderColor:'#e86f17',tension:.3}]});
+let monthRows=rows.filter(r=>{let d=parseDate(r.data_recebimento);return d&&d.getFullYear()==year&&d.getMonth()==month});
+draw('chartMonthGroup','doughnut',{labels:groups,datasets:[{data:sumGroup(monthRows),backgroundColor:['#176b4b','#3b82f6','#8b5cf6','#64748b']}]});
+let ranges=[0,0,0,0];olds.forEach(r=>{let d=daysOld(r),i=d<=30?0:d<=60?1:d<=120?2:3;ranges[i]+=parseNum(r.qntd)});
+draw('chartAge','bar',{labels:['15–30','31–60','61–120','121+'],datasets:[{label:'Unidades',data:ranges,backgroundColor:['#d99a00','#e86f17','#c63838','#7f1d1d']}]});
+}
+function draw(id,type,data){
+ if(charts[id])charts[id].destroy();
+ charts[id]=new Chart(document.getElementById(id),{
+  type,data,
+  options:{
+   responsive:true,maintainAspectRatio:false,
+   layout:{padding:{top:6,right:8,bottom:4,left:4}},
+   plugins:{legend:{display:true,position:'top',labels:{boxWidth:12,padding:16,usePointStyle:false}}},
+   scales:type==='doughnut'?{}:{
+    x:{grid:{display:false},ticks:{maxRotation:0}},
+    y:{beginAtZero:true,grid:{color:'rgba(120,140,130,.10)'},ticks:{precision:0}}
+   }
+  }
+ });
+}
+function renderOld(){let g=document.getElementById('oldGroup').value,q=clean(document.getElementById('oldSearch').value).toLowerCase();let rows=oldPieces().filter(r=>(!g||groupOf(r.patrimonio)==g)&&(!q||Object.values(r).join(' ').toLowerCase().includes(q)));document.getElementById('oldTable').innerHTML=oldRows(rows)}
+function filteredStockRows(){const q=clean(document.getElementById('stockSearch').value).toLowerCase(),g=document.getElementById('stockGroup').value,st=document.getElementById('stockStatus').value,from=document.getElementById('stockFrom').value,to=document.getElementById('stockTo').value;return db.stock.map((r,i)=>({...r,_i:i})).filter(r=>(!q||Object.values(r).join(' ').toLowerCase().includes(q))&&(!g||groupOf(r.patrimonio)===g)&&(!st||status(r)===st)&&(!from||dateISO(r.data_recebimento)>=from)&&(!to||dateISO(r.data_recebimento)<=to))}
+function stockIdentityGroups(rows){
+ // Consolida somente dentro do mesmo patrimônio. Liga códigos internos/equivalentes
+ // presentes no próprio registro ou em referências cadastradas; não usa descrições.
+ const parent=new Map();
+ const root=x=>{if(!parent.has(x))parent.set(x,x);if(parent.get(x)!==x)parent.set(x,root(parent.get(x)));return parent.get(x)};
+ const union=(a,b)=>{if(a&&b){const ra=root(a),rb=root(b);if(ra!==rb)parent.set(rb,ra)}};
+ const code=x=>clean(x).toUpperCase();
+ for(const r of rows){const a=code(r.cod_int),b=code(r.cod_equivalente);if(a)root(a);if(b)root(b);union(a,b)}
+ for(const ref of db.refs){const a=code(ref.codigo_interno),b=code(ref.cod_equivalente);if(a&&b&&parent.has(a)&&parent.has(b))union(a,b)}
+ const groups=new Map();
+ for(const r of rows){const a=code(r.cod_int),b=code(r.cod_equivalente),key=root(a||b||'REGISTRO:'+r._i);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)}
+ return [...groups.values()].map(items=>({items,qty:items.reduce((sum,r)=>sum+parseNum(r.qntd),0),code:items.find(r=>clean(r.cod_int))?.cod_int||items[0].cod_equivalente,eq:[...new Set(items.map(r=>clean(r.cod_equivalente)).filter(Boolean))].join(', '),name:items.find(r=>clean(r.nome_produto))?.nome_produto||'Produto sem descrição'}));
+}
+function stockNoteTable(items){
+ const body=items.map(r=>`<tr class="${stockSelection.has(r._i)?'is-selected':''}">
+ <td><input class="stock-check" type="checkbox" aria-label="Selecionar ${esc(r.cod_int||r.cod_equivalente||r.nome_produto)}" ${stockSelection.has(r._i)?'checked':''} ${parseNum(r.qntd)<=0?'disabled title="Produto sem saldo"':''} onchange="toggleStockSelection(${r._i},this.checked)"></td>
+ <td><strong>${esc(r.patrimonio)||'—'}</strong></td><td>${esc(r.nf)||'—'}</td>
+ <td class="stock-code">${esc(r.cod_int)||'—'}</td><td class="stock-code">${esc(r.cod_equivalente)||'—'}</td>
+ <td class="stock-description">${esc(r.nome_produto)||'Produto sem descrição'}</td>
+ <td class="stock-numeric">${br(r.qntd)}</td><td>${dateBR(r.data_recebimento)}</td>
+ <td>${esc(r.retirado)||'—'}</td><td class="stock-observation" title="${esc(r.observacao)}">${esc(r.observacao)||'—'}</td>
+ <td><span class="badge ${status(r)==='Com saldo'?'ok':'sem'}">${status(r)}</span></td>
+ <td><div class="stock-more"><button class="smallbtn" onclick="openStockEditor(${r._i})">Editar</button><button class="smallbtn" ${parseNum(r.qntd)<=0?'disabled title="Sem saldo"':''} onclick="selectSingleWithdrawal(${r._i})">Baixa</button></div></td></tr>`).join('');
+ return `<div class="stock-group-scroll"><table class="stock-group-table"><thead><tr><th>✓</th><th>Patrimônio</th><th>NF</th><th>Cód. interno</th><th>Cód. equivalente</th><th>Descrição do produto</th><th>Quantidade</th><th>Recebimento</th><th>Retirado por</th><th>Observação</th><th>Status</th><th>Ações</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function renderStock(){
+ const rows=filteredStockRows(),withSaldo=db.stock.filter(r=>parseNum(r.qntd)>0).length;
+ document.getElementById('stockStatTotal').textContent=br(db.stock.length);
+ document.getElementById('stockStatWith').textContent=br(withSaldo);
+ document.getElementById('stockStatWithout').textContent=br(db.stock.length-withSaldo);
+ const target=document.getElementById('stockTable');
+ if(!rows.length)target.innerHTML='<div class="stock-empty"><strong>Nenhum produto encontrado</strong>Cadastre um produto ou altere os filtros para consultar o estoque.</div>';
+ else target.innerHTML=['MAQ','IMP','VEC','OUTROS'].map(group=>{
+  const items=rows.filter(r=>groupOf(r.patrimonio)===group);
+  if(!items.length)return '';
+  const patrim = new Map();
+  for(const r of items){const key=clean(r.patrimonio).toUpperCase()||'SEM PATRIMÔNIO';if(!patrim.has(key))patrim.set(key,[]);patrim.get(key).push(r)}
+  const cards=[...patrim.entries()].sort((a,b)=>a[0].localeCompare(b[0],'pt-BR',{numeric:true})).map(([pat,patRows])=>{
+   const notes=new Map();
+   for(const r of patRows){const nf=clean(r.nf)||'SEM NF';if(!notes.has(nf))notes.set(nf,[]);notes.get(nf).push(r)}
+   const noteHtml=[...notes.entries()].map(([nf,noteRows])=>`<section class="note-block"><div class="note-title"><span>📄 Nota fiscal: ${esc(nf)}</span><small>${noteRows.length} item(ns) · ${br(noteRows.reduce((s,r)=>s+parseNum(r.qntd),0))} em saldo</small></div>${stockNoteTable(noteRows)}</section>`).join('');
+   // O resumo é calculado de todas as notas do patrimônio, não apenas da nota aberta.
+   const totals=stockIdentityGroups(patRows);
+   const totalRows=totals.map(t=>`<tr><td>${esc(t.code)}</td><td>${esc(t.eq)||'—'}</td><td>${esc(t.name)}</td><td>${t.items.length} registro(s)</td><td class="stock-numeric">${br(t.qty)}</td></tr>`).join('');
+   const summary=`<section class="summary-block"><div class="summary-heading">∑ TOTAL CONSOLIDADO — ${esc(pat)}</div><div class="stock-group-scroll"><table class="summary-table"><thead><tr><th>Código interno</th><th>Equivalência</th><th>Produto</th><th>Origens</th><th>Saldo total</th></tr></thead><tbody>${totalRows}</tbody></table></div><div class="summary-total">Saldo geral do patrimônio: ${br(patRows.reduce((s,r)=>s+parseNum(r.qntd),0))}</div><div class="summary-warning">Soma por código interno ou equivalência informada. Confira cadastros de códigos equivalentes antes de utilizar o total.</div></section>`;
+   const id='pat-'+group+'-'+encodeURIComponent(pat).replace(/%/g,'_');
+   return `<details class="patrimony-card" open><summary class="patrimony-heading"><span><strong>📦 ${esc(pat)}</strong><small>${notes.size} nota(s) fiscal(is) · ${patRows.length} registro(s)</small></span><span><strong>${br(patRows.reduce((s,r)=>s+parseNum(r.qntd),0))}</strong><small>Saldo disponível</small></span></summary><div class="patrimony-body">${noteHtml}${summary}</div></details>`;
+  }).join('');
+  return `<section class="stock-group-section" aria-label="Grupo ${group}"><div class="stock-group-header"><div><span class="stock-group-name">${group}</span><span class="stock-group-subtitle">${patrim.size} patrimônio(s) · ${items.length} registro(s)</span></div><button type="button" class="stock-group-select" onclick="toggleStockGroup('${group}',true)">Selecionar com saldo</button></div>${cards}</section>`;
+ }).join('');
+ document.getElementById('stockListFoot').textContent=`Exibindo ${rows.length} de ${db.stock.length} registro(s). Agrupamento por patrimônio, com notas separadas e total por código/equivalência.`;
+ updateStockSelectionCount();const eligible=rows.filter(r=>parseNum(r.qntd)>0),all=eligible.length>0&&eligible.every(r=>stockSelection.has(r._i));
+ const selectAll=document.getElementById('stockSelectAll');selectAll.checked=all;selectAll.indeterminate=!all&&eligible.some(r=>stockSelection.has(r._i));
+}
+
+function toggleStockGroup(group,checked){filteredStockRows().filter(r=>groupOf(r.patrimonio)===group&&parseNum(r.qntd)>0).forEach(r=>checked?stockSelection.add(r._i):stockSelection.delete(r._i));renderStock()}
+function clearStockFilters(){['stockSearch','stockGroup','stockStatus','stockFrom','stockTo'].forEach(id=>document.getElementById(id).value='');renderStock()}
+let stockEditorIndex=-1;
+const stockEditLabels=[['patrimonio','Patrimônio'],['nf','Nota fiscal'],['cod_int','Código interno'],['cod_equivalente','Código equivalente'],['nome_produto','Nome do produto'],['qntd','Quantidade em estoque'],['data_recebimento','Data de recebimento'],['retirado','Última retirada por'],['observacao','Observação']];
+function openStockEditor(i){const r=db.stock[i];if(!r)return;stockEditorIndex=i;document.getElementById('stockEditTitle').textContent='Detalhes do produto';document.getElementById('stockEditFields').innerHTML=stockEditLabels.map(([k,label])=>`<label class="${k==='nome_produto'||k==='observacao'?'full':''}">${label}<input data-stock-field="${k}" ${k==='qntd'?'type="number" min="0" step="any"':k==='data_recebimento'?'type="date"':'type="text"'} value="${esc(k==='data_recebimento'?dateISO(r[k]):r[k])}"></label>`).join('');document.getElementById('stockEditModal').classList.add('open')}
+function closeStockEditor(){document.getElementById('stockEditModal').classList.remove('open');stockEditorIndex=-1}
+function saveStockEditor(){const r=db.stock[stockEditorIndex];if(!r)return;const changes={};document.querySelectorAll('[data-stock-field]').forEach(el=>changes[el.dataset.stockField]=el.value);if(!Number.isFinite(Number(changes.qntd))||Number(changes.qntd)<0){alert('Informe uma quantidade válida, igual ou maior que zero.');return}Object.entries(changes).forEach(([k,v])=>r[k]=k==='qntd'?parseNum(v):v);save();closeStockEditor();refreshAll()}
+function selectSingleWithdrawal(i){if(!db.stock[i]||parseNum(db.stock[i].qntd)<=0)return;stockSelection.clear();stockSelection.add(i);renderStock();openBatchWithdrawal()}
+function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function editStock(i,k,v){db.stock[i][k]=k==='qntd'?parseNum(v):v;save();refreshAll()}
+function addStockRow(){db.stock.push({patrimonio:'',nf:'',cod_int:'',cod_equivalente:'',nome_produto:'',qntd:0,data_recebimento:today(),retirado:'',observacao:''});save();refreshAll();openStockEditor(db.stock.length-1)}
+function deleteStock(i){if(confirm('Excluir este registro?')){db.stock.splice(i,1);stockSelection.clear();closeBatchWithdrawal();save();refreshAll()}}
+function withdraw(i){let who=prompt('Nome de quem retirou:');if(who===null||!clean(who))return;let r=db.stock[i],amount=prompt(`Quantidade a retirar (saldo atual: ${r.qntd}). Deixe vazio para zerar:`);r.retirado=clean(who);if(amount===null||amount==='')r.qntd=0;else r.qntd=Math.max(0,parseNum(r.qntd)-parseNum(amount));save();refreshAll()}
+function updateStockSelectionCount(){
+ for(const i of [...stockSelection])if(!db.stock[i]||parseNum(db.stock[i].qntd)<=0)stockSelection.delete(i);
+ document.getElementById('selectedStockCount').textContent=stockSelection.size+' produto(s) selecionado(s)';document.getElementById('batchActionButton').disabled=stockSelection.size===0;
+}
+function toggleStockSelection(i,checked){if(checked&&parseNum(db.stock[i]?.qntd)>0)stockSelection.add(i);else stockSelection.delete(i);renderStock()}
+function toggleAllVisibleStock(checked){filteredStockRows().forEach(r=>{if(parseNum(r.qntd)>0){if(checked)stockSelection.add(r._i);else stockSelection.delete(r._i)}});renderStock()}
+function clearStockSelection(){stockSelection.clear();closeBatchWithdrawal();renderStock()}
+function openBatchWithdrawal(){
+ updateStockSelectionCount();if(!stockSelection.size){alert('Selecione pelo menos um item com saldo.');return}
+ batchWithdrawalDraft=[...stockSelection].sort((a,b)=>a-b).map(i=>({index:i,amount:parseNum(db.stock[i].qntd)}));
+ document.getElementById('batchWithdrawalTable').innerHTML=header(['Patrimônio','Código','Produto','Saldo disponível','Quantidade a retirar'])+batchWithdrawalDraft.map((item,n)=>{const r=db.stock[item.index];return `<tr><td>${esc(r.patrimonio)}</td><td>${esc(r.cod_int||r.cod_equivalente)}</td><td>${esc(r.nome_produto)}</td><td>${br(r.qntd)}</td><td><input type="number" min="0.001" step="any" value="${item.amount}" aria-label="Quantidade de baixa do item ${n+1}" oninput="batchWithdrawalDraft[${n}].amount=this.value"></td></tr>`}).join('')+'</tbody></table>';
+ document.getElementById('batchWithdrawalPanel').style.display='block';document.getElementById('batchWithdrawalPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeBatchWithdrawal(){document.getElementById('batchWithdrawalPanel').style.display='none';batchWithdrawalDraft=[]}
+function confirmBatchWithdrawal(){
+ const who=clean(document.getElementById('batchWho').value),reason=clean(document.getElementById('batchReason').value);
+ if(!who){alert('Informe quem retirou os produtos.');return}
+ if(!batchWithdrawalDraft.length){alert('Nenhum item selecionado.');return}
+ for(const item of batchWithdrawalDraft){const r=db.stock[item.index],amount=Number(String(item.amount).replace(',','.'));if(!r||!Number.isFinite(amount)||amount<=0||amount>parseNum(r.qntd)+1e-9){alert('Quantidade inválida ou maior que o saldo para o item '+(r?.cod_int||r?.cod_equivalente||''));return}item.amount=amount}
+ if(!confirm(`Confirmar baixa de ${batchWithdrawalDraft.length} item(ns) para ${who}?`))return;
+ if(!Array.isArray(db.withdrawalHistory))db.withdrawalHistory=[];
+ const date=new Date().toISOString();
+ for(const item of batchWithdrawalDraft){const r=db.stock[item.index],before=parseNum(r.qntd);db.withdrawalHistory.push({data:date,patrimonio:r.patrimonio,nf:r.nf,cod_int:r.cod_int,cod_equivalente:r.cod_equivalente,nome_produto:r.nome_produto,quantidade:item.amount,saldo_anterior:before,saldo_restante:Math.max(0,before-item.amount),retirado_por:who,observacao:reason});r.qntd=Math.max(0,Math.round((before-item.amount)*1000000)/1000000);r.retirado=who}
+ const count=batchWithdrawalDraft.length;save();stockSelection.clear();closeBatchWithdrawal();refreshAll();alert(count+' baixa(s) realizada(s) com sucesso.');
+}
+function exportStock(kind){let rows=db.stock.map(r=>({...r,status:status(r),grupo:groupOf(r.patrimonio),data_recebimento:dateBR(r.data_recebimento)}));exportRows(rows,'Estoque_Virtual',kind)}
+function exportOld(){exportRows(oldPieces().map(r=>({...r,dias_sem_retirada:daysOld(r),data_recebimento:dateBR(r.data_recebimento)})),'Pecas_Antigas','xlsx')}
+function exportRows(rows,name,kind){if(kind==='csv'){let ws=XLSX.utils.json_to_sheet(rows);let csv=XLSX.utils.sheet_to_csv(ws);let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=name+'.csv';a.click()}else{let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Dados');XLSX.writeFile(wb,name+'.xlsx')}}
+function importFile(e){let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=x=>{let wb=XLSX.read(x.target.result,{type:'array',cellDates:true});let arr=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});let map=a=>String(a||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+db.stock=arr.map(o=>{let z={};Object.entries(o).forEach(([k,v])=>z[map(k)]=v);return{patrimonio:z.patrimonio||'',nf:z.nf||'',cod_int:z.codint||z.codigointerno||'',cod_equivalente:z.codequivalente||z.equivalente||'',nome_produto:z.nomedeproduto||z.nomeproduto||z.produto||'',qntd:parseNum(z.qntd||z.quantidade),data_recebimento:dateISO(z.datarecebimento||z.recebimento||''),retirado:z.retirado||z.retiradopor||'',observacao:z.observacao||z.solicitante||''}}).filter(r=>Object.values(r).some(v=>clean(v)));save();refreshAll();alert('Importação concluída: '+db.stock.length+' linhas.');};reader.readAsArrayBuffer(f);e.target.value=''}
+let entryLines=[];
+function findReference(code){
+ const key=clean(code).toUpperCase();
+ if(!key)return null;
+ return db.refs.find(r=>clean(r.codigo_interno).toUpperCase()===key||clean(r.cod_equivalente).toUpperCase()===key)||null;
+}
+function enrichEntry(item){
+ const ref=findReference(item.cod_int)||findReference(item.cod_equiv);
+ if(!ref)return item;
+ return {...item,
+  cod_int:clean(ref.codigo_interno)||item.cod_int||'',
+  cod_equiv:clean(ref.cod_equivalente)||item.cod_equiv||'',
+  nome_produto:clean(ref.descricao)||item.nome_produto||'',
+  unidade:clean(ref.unidade)||item.unidade||'',
+  armazem:clean(ref.armazem)||item.armazem||''
+ };
+}
+function splitPastedLine(line){
+ const s=String(line||'').trim();
+ if(!s)return [];
+ // Prioriza delimitadores de colunas reais (Excel/CSV).
+ if(s.includes('\t'))return s.split('\t').map(x=>x.trim());
+ if(s.includes(';'))return s.split(';').map(x=>x.trim());
+ // Em linhas com vírgulas, considera CSV somente quando a última coluna é quantidade.
+ if(s.includes(',')){
+  const parts=s.split(',').map(x=>x.trim());
+  if(parts.length>=2&&/^-?\d+(?:[.,]\d+)?$/.test(parts[parts.length-1]))return parts;
+ }
+ // Fallback para texto copiado de PDF/e-mail: usa a primeira e a última informação
+ // como códigos/quantidade e preserva o texto intermediário como descrição.
+ return null;
+}
+function parsePastedItem(line){
+ const s=String(line||'').trim();
+ if(!s)return null;
+ let cols=splitPastedLine(s), item={cod_int:'',cod_equiv:'',nome_produto:'',qntd:'',unidade:'',armazem:''};
+ if(!cols){
+  const tokens=s.split(/\s+/);
+  if(tokens.length<2)return null;
+  const last=tokens[tokens.length-1];
+  if(!/^-?\d+(?:[.,]\d+)?$/.test(last))return null;
+  item.qntd=parseNum(last);
+  item.cod_int=tokens[0];
+  if(tokens.length>=4 && /^[A-Za-z0-9._/-]+$/.test(tokens[1])){
+   item.cod_equiv=tokens[1];
+   item.nome_produto=tokens.slice(2,-1).join(' ');
+  }else if(tokens.length>=3){
+   item.nome_produto=tokens.slice(1,-1).join(' ');
+  }
+ }else{
+  // Remove células vazias somente nas extremidades; mantém posição das colunas internas.
+  while(cols.length&&cols[0]==='')cols.shift();
+  while(cols.length&&cols[cols.length-1]==='')cols.pop();
+  if(cols.length<2)return null;
+  const last=cols[cols.length-1];
+  if(!/^-?\d+(?:[.,]\d+)?$/.test(last))return null;
+  item.qntd=parseNum(last);
+  if(cols.length===2){
+   item.cod_int=cols[0];
+  }else if(cols.length===3){
+   item.cod_int=cols[0];
+   if(findReference(cols[0])||findReference(cols[1]))item.cod_equiv=cols[1];
+   else item.nome_produto=cols[1];
+  }else{
+   item.cod_int=cols[0];
+   item.cod_equiv=cols[1]||'';
+   item.nome_produto=cols.slice(2,-1).filter(Boolean).join(' ').trim();
+  }
+ }
+ // Ignora títulos de coluna e separadores que não sejam produtos.
+ const normalized=[item.cod_int,item.cod_equiv,item.nome_produto].join(' ').toUpperCase();
+ if(/^(CODIGO|CÓDIGO|COD|DESCRICAO|DESCRIÇÃO|PRODUTO|QUANTIDADE|QNTD|ITEM|TOTAL)\b/.test(normalized))return null;
+ if(/^[M\s]*A[\s]*Q$|^[I\s]*M[\s]*P$|^[V\s]*E[\s]*C$|^OUTROS$/.test(s.toUpperCase()))return null;
+ item=enrichEntry(item);
+ return item;
+}
+// Reconhece a cópia verticalizada: bloco de códigos, descrições, unidades,
+// armazéns e quantidades, inclusive quando a extração intercala ruídos.
+function parseVerticalBlocks(raw){
+ const lines=String(raw).split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+ const isUnit=x=>/^(UN|UND|PC|PÇ|PÇS|KG|L|LT|CX|MT|M|PAR|JG)$/i.test(x);
+ const isQuantity=x=>/^\d+(?:[.,]\d{1,3})?$/.test(x);
+ const isCode=x=>/^(?=.*\d)[A-Z0-9][A-Z0-9._/-]*$/i.test(x);
+ const isWarehouse=x=>/^(?:\d{1,3}[A-Z]{1,3}|\d{1,3})$/i.test(x);
+ // A estrutura é identificada pelo bloco de unidades, que define o número de itens.
+ // Não usa a contagem de códigos, pois pode existir um segundo bloco de equivalentes incompleto.
+ let unitStart=-1,n=0;
+ for(let i=0;i<lines.length;i++){
+  if(!isUnit(lines[i]))continue;
+  let j=i;while(j<lines.length&&isUnit(lines[j]))j++;
+  if(j-i>n){unitStart=i;n=j-i}
+  i=j-1;
+ }
+ if(n<2)return null;
+ const unitEnd=unitStart+n;
+ if(lines.length<unitEnd+2*n)return null;
+ const warehouses=lines.slice(unitEnd,unitEnd+n);
+ const quantities=lines.slice(unitEnd+n,unitEnd+2*n);
+ if(!warehouses.every(isWarehouse)||!quantities.every(isQuantity)||lines.slice(unitEnd+2*n).length)return null;
+ const prefix=lines.slice(0,unitStart);
+ // Os n últimos textos descritivos, antes das unidades, são as descrições.
+ let descStart=prefix.length-n;
+ if(descStart<0)return null;
+ const descriptions=prefix.slice(descStart);
+ if(!descriptions.every(x=>!isUnit(x)&&!isCode(x)&&/[A-ZÀ-Ú]{2,}/i.test(x)))return null;
+ const codeLines=prefix.slice(0,descStart).filter(x=>!isUnit(x));
+ if(codeLines.length<n||!codeLines.every(isCode))return null;
+ const codes=codeLines.slice(0,n),equivs=codeLines.slice(n);
+ if(equivs.length>n)return null;
+ // Associa equivalentes pela referência escrita na descrição, quando presente.
+ // Os códigos sem referência explícita são alinhados somente quando a posição é inequívoca.
+ const assigned=Array(n).fill('');
+ let last=-1;
+ for(let k=0;k<equivs.length;k++){
+  const eq=equivs[k].toUpperCase();
+  const matches=[];
+  for(let i=last+1;i<n;i++){
+   const tokens=descriptions[i].toUpperCase().match(/[A-Z0-9]+/g)||[];
+   if(tokens.includes(eq))matches.push(i);
+  }
+  if(matches.length===1){assigned[matches[0]]=equivs[k];last=matches[0]}
+ }
+ // Alinhamento por ordem: segmentos com igual número de equivalentes e posições livres.
+ // Caso haja mais de uma possibilidade, não inventa a equivalência.
+ const fixed=assigned.map((v,i)=>v?i:-1).filter(i=>i>=0);
+ const anchored=new Set(assigned.filter(Boolean).map(x=>x.toUpperCase()));
+ const remaining=equivs.filter(x=>!anchored.has(x.toUpperCase()));
+ const gaps=[];for(let i=0;i<n;i++)if(!assigned[i])gaps.push(i);
+ if(remaining.length===gaps.length)remaining.forEach((v,i)=>assigned[gaps[i]]=v);
+ else if(remaining.length&&fixed.length){
+  // Preenche apenas intervalos determinados pelos códigos-âncora e sua ordem original.
+  let eqPos=0,prevItem=-1;
+  for(const anchor of fixed){
+   const target=equivs.findIndex((v,k)=>k>=eqPos&&v.toUpperCase()===assigned[anchor].toUpperCase());
+   if(target<0)continue;
+   const pending=equivs.slice(eqPos,target),slots=[];
+   for(let i=prevItem+1;i<anchor;i++)if(!assigned[i])slots.push(i);
+   if(pending.length===slots.length)pending.forEach((v,i)=>assigned[slots[i]]=v);
+   eqPos=target+1;prevItem=anchor;
+  }
+  const tail=equivs.slice(eqPos),slots=[];
+  for(let i=prevItem+1;i<n;i++)if(!assigned[i])slots.push(i);
+  if(tail.length===slots.length)tail.forEach((v,i)=>assigned[slots[i]]=v);
+ }
+ return codes.map((code,i)=>enrichEntry({
+  cod_int:code,cod_equiv:assigned[i],nome_produto:descriptions[i],
+  qntd:parseNum(quantities[i]),unidade:lines[unitStart+i],armazem:warehouses[i]
+ }));
+}
+function processPastedItems(){
+ const raw=document.getElementById('pastedItems').value;
+ const vertical=parseVerticalBlocks(raw);
+ if(vertical){
+  entryLines=entryLines.concat(vertical);renderEntry();
+  document.getElementById('processMessage').textContent=`${vertical.length} item(ns) reconhecido(s) por blocos de colunas. Confira os dados antes de confirmar.`;
+  return;
+ }
+ const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const parsed=[],ignored=[];
+ lines.forEach((line,i)=>{
+  const item=parsePastedItem(line);
+  if(item&&(item.cod_int||item.cod_equiv||item.nome_produto)&&clean(item.qntd)!=='')parsed.push(item);
+  else ignored.push(i+1);
+ });
+ if(!parsed.length){
+  document.getElementById('processMessage').textContent='Nenhum item válido identificado. Confira se cada linha contém pelo menos um código e a quantidade.';
+  return;
+ }
+ entryLines=entryLines.concat(parsed);
+ renderEntry();
+ document.getElementById('processMessage').textContent=`${parsed.length} item(ns) processado(s).`+(ignored.length?` ${ignored.length} linha(s) ignorada(s): ${ignored.join(', ')}.`:'');
+}
+function clearPastedItems(){
+ document.getElementById('pastedItems').value='';
+ document.getElementById('processMessage').textContent='';
+}
+function renderEntry(){
+ const target=document.getElementById('entryTable');
+ if(!entryLines.length){target.innerHTML='<div class="empty">Nenhum item processado. Cole os itens da NF ou adicione uma linha manualmente.</div>';return}
+ target.innerHTML=header(['Cód. Int.','Cód. Equivalente','Nome do Produto','Quantidade','Unidade','Armazém',''])+
+ entryLines.map((r,i)=>`<tr>
+ <td><input value="${esc(r.cod_int||'')}" onchange="entryEdit(${i},'cod_int',this.value)"></td>
+ <td><input value="${esc(r.cod_equiv||'')}" onchange="entryEdit(${i},'cod_equiv',this.value)"></td>
+ <td><input value="${esc(r.nome_produto||'')}" onchange="entryEdit(${i},'nome_produto',this.value)"></td>
+ <td><input type="number" min="0" step="any" value="${esc(r.qntd??'')}" onchange="entryEdit(${i},'qntd',this.value)"></td>
+ <td>${esc(r.unidade||'—')}</td><td>${esc(r.armazem||'—')}</td>
+ <td><button class="smallbtn" onclick="removeEntryLine(${i})">🗑</button></td></tr>`).join('')+'</tbody></table>';
+}
+function entryEdit(i,k,v){
+ entryLines[i][k]=k==='qntd'?(v===''?'':parseNum(v)):v;
+ if(k==='cod_int'||k==='cod_equiv')entryLines[i]=enrichEntry(entryLines[i]);
+ renderEntry();
+}
+function removeEntryLine(i){entryLines.splice(i,1);renderEntry()}
+function addEntryLine(){entryLines.push({cod_int:'',cod_equiv:'',nome_produto:'',qntd:'',unidade:'',armazem:''});renderEntry()}
+function saveEntries(){
+ const pat=clean(document.getElementById('entryPatrimonio').value),nf=clean(document.getElementById('entryNF').value),sol=clean(document.getElementById('entrySolicitante').value);
+ const validLines=entryLines.filter(r=>(clean(r.cod_int)||clean(r.cod_equiv))&&clean(r.nome_produto)&&clean(r.qntd)!==''&&Number.isFinite(parseNum(r.qntd)));
+ if(!pat||!nf||!sol||!validLines.length)return alert('Informe patrimônio, NF, solicitante e ao menos um item válido com código, descrição e quantidade.');
+ const received=clean(document.getElementById('entryDate').value);
+ if(!received||!/^\d{4}-\d{2}-\d{2}$/.test(received)||!parseDate(received))return alert('Informe uma data de recebimento válida.');
+ validLines.forEach(r=>db.stock.push({patrimonio:pat,nf,cod_int:r.cod_int||'',cod_equivalente:r.cod_equiv||'',nome_produto:r.nome_produto,qntd:parseNum(r.qntd),data_recebimento:received,retirado:'',observacao:sol}));
+ entryLines=[];
+ ['entryPatrimonio','entryNF','entrySolicitante'].forEach(id=>document.getElementById(id).value='');
+ clearPastedItems();
+ document.getElementById('entryDate').value=localToday();
+ save();refreshAll();
+ alert(`${validLines.length} item(ns) recebido(s) e enviado(s) ao Estoque Virtual.`);
+}
+function renderRefs(){let q=clean(document.getElementById('refSearch').value).toLowerCase(),rows=db.refs.filter(r=>Object.values(r).join(' ').toLowerCase().includes(q));document.getElementById('refsTable').innerHTML=header(['Código','Equivalente','Descrição','Un.','Armazém','Quantidade'])+rows.map(r=>`<tr><td>${r.codigo_interno}</td><td>${r.cod_equivalente}</td><td>${r.descricao}</td><td>${r.unidade}</td><td>${r.armazem}</td><td>${br(r.quantidade)}</td></tr>`).join('')+'</tbody></table>'}
+function renderQuick(){
+ const search=clean(document.getElementById('quickSearch').value).toLowerCase();
+ const group=document.getElementById('queryGroup').value;
+ const minDays=Number(document.getElementById('queryAge').value||0);
+ // Não altera o estoque: a consulta é calculada a partir das linhas originais.
+ const available=db.stock.filter(r=>clean(r.patrimonio)&&parseNum(r.qntd)>0);
+ const notes=new Map();
+ available.forEach(r=>{
+  const pat=clean(r.patrimonio).toUpperCase(),nf=clean(r.nf)||'Sem NF';
+  const key=JSON.stringify([pat,nf]);
+  if(!notes.has(key))notes.set(key,{pat,nf,rows:[]});
+  notes.get(key).rows.push(r);
+ });
+ const all=[...notes.values()];
+ const matching=all.filter(n=>{
+  if(group&&groupOf(n.pat)!==group)return false;
+  const dates=n.rows.map(r=>parseDate(r.data_recebimento)).filter(Boolean);
+  const oldest=dates.length?new Date(Math.min(...dates.map(d=>d.getTime()))):null;
+  const age=oldest?Math.max(0,Math.floor((new Date().setHours(0,0,0,0)-oldest.getTime())/86400000)):null;
+  if(minDays&&(age===null||age<minDays))return false;
+  return !search||[n.pat,n.nf,...n.rows.flatMap(r=>[r.nome_produto,r.cod_int,r.cod_equivalente,r.observacao,r.solicitante])].some(v=>clean(v).toLowerCase().includes(search));
+ });
+ document.getElementById('queryPatCount').textContent=new Set(all.map(n=>n.pat)).size;
+ document.getElementById('queryNFCount').textContent=all.length;
+ document.getElementById('queryItemCount').textContent=available.length;
+ const target=document.getElementById('quickTable');
+ if(!matching.length){target.innerHTML='<div class="query-empty">Nenhuma mercadoria com saldo encontrada para os filtros selecionados.</div>';return}
+ const groups=['MAQ','IMP','VEC','OUTROS'];
+ target.innerHTML=groups.map(g=>{
+  const groupNotes=matching.filter(n=>groupOf(n.pat)===g);
+  if(!groupNotes.length)return '';
+  const patrimonies=[...new Set(groupNotes.map(n=>n.pat))].sort((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true}));
+  return `<div class="query-group"><div class="query-group-title"><span>${g} — ${g==='MAQ'?'MÁQUINAS':g==='IMP'?'IMPLEMENTOS':g==='VEC'?'VEÍCULOS':'OUTROS'}</span><span>${patrimonies.length} patrimônio(s)</span></div>${patrimonies.map(pat=>{
+   const patNotes=groupNotes.filter(n=>n.pat===pat).sort((a,b)=>a.nf.localeCompare(b.nf,'pt-BR',{numeric:true}));
+   return `<div class="query-patrimony"><div class="query-patrimony-title"><span>📦 ${esc(pat)}</span><span class="muted" style="font-size:12px">${patNotes.length} nota(s)</span></div>${patNotes.map(n=>{
+    const dates=n.rows.map(r=>parseDate(r.data_recebimento)).filter(Boolean);
+    const oldest=dates.length?new Date(Math.min(...dates.map(d=>d.getTime()))):null;
+    const age=oldest?Math.max(0,Math.floor((new Date().setHours(0,0,0,0)-oldest.getTime())/86400000)):null;
+    const dateText=oldest?oldest.toLocaleDateString('pt-BR'):'Não informada';
+    const people=[...new Set(n.rows.map(r=>clean(r.solicitante||r.observacao)).filter(Boolean))];
+    const who=people.length?people.join(', '):'Não informado';
+    const total=n.rows.reduce((sum,r)=>sum+parseNum(r.qntd),0);
+    return `<details class="query-nf"><summary><span class="query-field"><small>Nota fiscal</small><strong>${esc(n.nf)}</strong></span><span class="query-field"><small>Recebimento</small><strong>${esc(dateText)}</strong></span><span class="query-field"><small>Dias no almoxarifado</small><strong class="query-age ${age!==null&&age>=30?'old':''}">${age===null?'Sem data':age+' dia(s)'}</strong></span><span class="query-field"><small>Solicitante / responsável*</small><strong>${esc(who)}</strong></span></summary><div class="query-nf-body"><table><thead><tr><th>Código interno</th><th>Equivalente</th><th>Mercadoria</th><th>Saldo</th><th>Data</th></tr></thead><tbody>${n.rows.map(r=>`<tr><td>${esc(r.cod_int)||'—'}</td><td>${esc(r.cod_equivalente)||'—'}</td><td style="white-space:normal;min-width:220px">${esc(r.nome_produto)||'—'}</td><td><strong>${br(r.qntd)}</strong></td><td>${dateBR(r.data_recebimento)}</td></tr>`).join('')}</tbody></table><p class="stock-help">${n.rows.length} registro(s) com saldo · ${br(total)} unidade(s) no total</p></div></details>`;
+   }).join('')}</div>`;
+  }).join('')}</div>`;
+ }).join('');
+}
+function oilState(r){let min=clean(r.minimo);if(min==='')return '';let s=parseNum(r.saldo),m=parseNum(r.minimo);if(s<=m)return 'critical';if(s<=m*1.2)return 'attention';return ''}
+function oilTable(rows){if(!rows.length)return '<div class="empty">Nenhum óleo próximo do estoque mínimo.</div>';return header(['Código','Nome do óleo','Saldo','Mínimo'])+rows.map(r=>`<tr><td>${r.codigo}</td><td>${r.produto}</td><td>${br(r.saldo)}</td><td>${clean(r.minimo)===''?'—':br(r.minimo)}</td></tr>`).join('')+'</tbody></table>'}
+function renderOils(){let crit=db.oils.filter(r=>oilState(r)==='critical'),att=db.oils.filter(r=>oilState(r)==='attention');document.getElementById('criticalCount').textContent=crit.length;document.getElementById('attentionCount').textContent=att.length;document.getElementById('criticalTable').innerHTML=oilTable(crit);document.getElementById('attentionTable').innerHTML=oilTable(att);
+document.getElementById('oilTable').innerHTML=header(['Código','Produto','Saldo','Mínimo','Status',''])+db.oils.map((r,i)=>`<tr><td><input value="${esc(r.codigo)}" onchange="oilEdit(${i},'codigo',this.value)"></td><td><input value="${esc(r.produto)}" onchange="oilEdit(${i},'produto',this.value)"></td><td><input type="number" value="${r.saldo}" onchange="oilEdit(${i},'saldo',this.value)"></td><td><input type="number" value="${r.minimo}" placeholder="Sem mínimo" onchange="oilEdit(${i},'minimo',this.value)"></td><td>${oilState(r)==='critical'?'🔴 CRÍTICO':oilState(r)==='attention'?'🟡 ATENÇÃO':'🟢 OK'}</td><td><button class="smallbtn" onclick="db.oils.splice(${i},1);save();renderOils()">🗑</button></td></tr>`).join('')+'</tbody></table>'}
+function oilEdit(i,k,v){db.oils[i][k]=k==='saldo'||k==='minimo'?(v===''?'':parseNum(v)):v;save();renderOils()}
+function addOil(){db.oils.push({codigo:'',produto:'',saldo:0,minimo:''});save();renderOils()}
+function refreshAll(){renderDashboard();renderStock();renderOld();renderQuick();renderEntry();renderRefs()}
+document.documentElement.dataset.theme='dark';
+const titles={dashboard:'PAINEL OPERACIONAL DO ALMOXARIFADO',estoque:'ESTOQUE VIRTUAL',antigas:'PEÇAS ANTIGAS',entrada:'CADASTRO DE ENTRADA',consulta:'CONSULTA DE MERCADORIAS'};
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(b.dataset.screen).classList.add('active');document.getElementById('pageTitle').textContent=titles[b.dataset.screen]});
+function localToday(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+document.getElementById('entryDate').value=localToday();
+refreshAll();
+</script>
+</body></html>
