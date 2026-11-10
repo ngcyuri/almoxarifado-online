@@ -6,6 +6,7 @@
 <title>Almoxarifado – Painel Operacional</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script>
 <style>
 :root{--bg:#f4f7f6;--card:#fff;--text:#17221d;--muted:#6c7771;--line:#dfe7e2;--primary:#176b4b;--primary2:#0f5238;--green:#138a52;--yellow:#d99a00;--orange:#e86f17;--red:#c63838;--gray:#718096;--shadow:0 8px 24px rgba(22,43,32,.08)}
 [data-theme="dark"]{--bg:#121816;--card:#1b2420;--text:#edf5f0;--muted:#9aa8a0;--line:#304038;--primary:#36a876;--primary2:#25845a;--shadow:0 8px 24px rgba(0,0,0,.25)}
@@ -67,9 +68,36 @@ body{background:radial-gradient(ellipse at 70% -20%,rgba(39,133,92,.13),transpar
 #dashboard .charts{gap:17px}#dashboard .chart-card{min-height:355px;border:1px solid #2b4035;background:linear-gradient(150deg,#19251f,#141e1a);padding:23px 23px 18px;border-radius:17px}#dashboard .chart-card h3{font-size:14px;font-weight:750;letter-spacing:.015em;margin-bottom:20px}#dashboard .footer{margin-top:12px;font-size:11px;color:#839c8e}
 .btn{transition:filter .2s,transform .2s}.btn:hover{filter:brightness(1.1)}.card{border-color:#2b3e34}
 @media(max-width:1100px){.dash-live{display:none}}@media(max-width:900px){.main{padding:18px 14px 90px}.dash-intro{padding:21px}.dash-intro h2{font-size:22px}.theme-locked{font-size:9px;padding:8px}}@media(max-width:560px){.dash-section-heading>span{display:none}.dash-intro h2{font-size:20px}#dashboard .kpi{min-height:110px}#dashboard .kpi .value{font-size:30px}}
+
+/* Autenticação e estado online */
+body:not(.alm-online-ready) .app{display:none!important}
+#almAuthOverlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at top left,#13452f 0%,#0c1210 45%,#080e0c 100%)}
+body.alm-online-ready #almAuthOverlay{display:none}
+.alm-auth-box{background:#17211d;color:#eef9f2;border:1px solid #334739;border-radius:22px;max-width:445px;width:100%;box-shadow:0 35px 90px #0008;padding:30px}
+.alm-auth-box h1{margin:4px 0 9px;font-size:24px}.alm-auth-box p{color:#9caf9f;line-height:1.55;font-size:13px}
+.alm-auth-box label{display:block;margin:16px 0 5px;font-size:12px;font-weight:700;color:#c3d5c9}
+.alm-auth-box input{width:100%;height:44px;background:#0c1510;color:#fff;border:1px solid #39503f}
+.alm-auth-box .btn{width:100%;margin-top:20px;height:44px}
+.alm-auth-actions{display:flex;gap:8px;margin-top:12px}.alm-auth-actions button{background:none;color:#c0e8d0;border:1px solid #39503f;padding:9px 12px;border-radius:8px;cursor:pointer;flex:1}
+#almAuthMessage{font-size:13px;line-height:1.5;margin-top:12px;min-height:20px;color:#d8e9dd}
+.alm-onlinebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid #345241;border-radius:10px;background:#16271e;margin-bottom:15px;font-size:12px;color:#c9e4d2}
+.alm-onlinebar button{background:#254b35;border:0;color:#fff;border-radius:7px;padding:7px 10px;cursor:pointer}
+.alm-onlinebar small{color:#a9c4b2}
+.alm-onlinebar .spacer{flex:1}
 </style>
 </head>
 <body>
+
+<div id="almAuthOverlay" role="dialog" aria-modal="true" aria-label="Acesso ao Almoxarifado Online">
+ <div class="alm-auth-box"><div style="color:#6dd6a2;font-weight:900;letter-spacing:.12em;font-size:12px">ALMOXARIFADO ONLINE</div>
+ <h1>Acesso seguro</h1><p>Entre com sua conta autorizada. Os dados do estoque serão consultados diretamente no Supabase; os registros antigos deste navegador serão preservados para migração.</p>
+ <form id="almAuthForm"><label for="almEmail">E-mail</label><input id="almEmail" type="email" autocomplete="username" required placeholder="seu@email.com">
+ <label for="almPassword">Senha</label><input id="almPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Sua senha">
+ <button class="btn" id="almLoginButton" type="submit">Entrar no Almoxarifado</button></form>
+ <div class="alm-auth-actions"><button type="button" onclick="onlineSignUp()">Criar minha conta</button><button type="button" onclick="onlineResetPassword()">Recuperar senha</button></div>
+ <div id="almAuthMessage" aria-live="polite"></div>
+ </div>
+</div>
 <div class="app">
 <aside class="sidebar"><div class="brand">ALMOXARIFADO<small>PAINEL OPERACIONAL</small></div>
 <nav class="nav">
@@ -80,6 +108,7 @@ body{background:radial-gradient(ellipse at 70% -20%,rgba(39,133,92,.13),transpar
 <button data-screen="consulta">🔎 Consulta de Mercadorias</button>
 </nav></aside>
 <main class="main">
+<div class="alm-onlinebar" id="almOnlineStatus"><strong>● CONECTADO AO SUPABASE</strong><span id="almOnlineUser">—</span><small id="almOnlineRole">—</small><span class="spacer"></span><button onclick="loadOnline()">↻ Atualizar dados</button><button onclick="onlineSignOut()">Sair</button></div>
 <div class="topbar"><h1 id="pageTitle">PAINEL OPERACIONAL DO ALMOXARIFADO</h1><span class="theme-locked">● SISTEMA OPERACIONAL</span></div>
 
 <section id="dashboard" class="screen active">
@@ -183,11 +212,12 @@ stock:[],
 refs:[],
 oils:[]
 };
-let db=(()=>{try{const saved=JSON.parse(localStorage.getItem(DBKEY)||'null');return saved&&Array.isArray(saved.stock)&&Array.isArray(saved.refs)&&Array.isArray(saved.oils)?saved:structuredClone(initial)}catch(e){return structuredClone(initial)}})();
+// A versão online não lê nem sobrescreve o estoque local; o legado é mantido para migração posterior.
+let db=structuredClone(initial);
 let charts={};
 const stockSelection=new Set();
 let batchWithdrawalDraft=[];
-function save(){localStorage.setItem(DBKEY,JSON.stringify(db))}
+function save(){throw new Error('Gravação local desabilitada na versão online');}
 function oldPieces(){return db.stock.filter(r=>valid(r)&&parseNum(r.qntd)>0&&parseDate(r.data_recebimento)&&daysOld(r)>=15&&!clean(r.retirado)).sort((a,b)=>daysOld(b)-daysOld(a))}
 function header(cols){return '<table><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'}
 function oldRows(rows){if(!rows.length)return '<div class="empty">Nenhum item encontrado.</div>';return header(['Patrimônio','Código','Peça','Unidades','Recebimento','Dias sem retirada','Observação'])+rows.map(r=>{let d=daysOld(r),cl=d>=61?'day61':d>=31?'day31':'day15';return `<tr><td>${clean(r.patrimonio)}</td><td>${clean(r.cod_int)||clean(r.cod_equivalente)}</td><td>${clean(r.nome_produto)}</td><td>${br(r.qntd)}</td><td>${dateBR(r.data_recebimento)}</td><td><span class="badge ${cl}">${d} dias</span></td><td>${clean(r.observacao)}</td></tr>`}).join('')+'</tbody></table>'}
@@ -591,6 +621,132 @@ const titles={dashboard:'PAINEL OPERACIONAL DO ALMOXARIFADO',estoque:'ESTOQUE VI
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(b.dataset.screen).classList.add('active');document.getElementById('pageTitle').textContent=titles[b.dataset.screen]});
 function localToday(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 document.getElementById('entryDate').value=localToday();
-refreshAll();
+
+/* =================== INTEGRAÇÃO SUPABASE =================== */
+const ALM_SUPABASE_URL='https://quokynllfptfszwxhmvw.supabase.co';
+// Chave publicável, não é uma senha: o controle real de acesso depende de Auth + RLS.
+const ALM_SUPABASE_KEY='sb_publishable_98ayfNGn6tRaqI42zD6fLQ_Z75IR3gM';
+let onlineClient=null, onlineProfile=null, onlineBusy=false;
+function onlineMessage(msg){document.getElementById('almAuthMessage').textContent=msg;}
+function onlineFail(err){console.error('Almoxarifado Online',err);alert(err?.message||String(err));}
+function canOperate(){return onlineProfile?.ativo&&['admin','operador'].includes(onlineProfile.perfil);}
+async function onlineSignOut(){
+ try{await onlineClient.auth.signOut()}catch(e){console.warn(e)}
+ onlineProfile=null;db=structuredClone(initial);stockSelection.clear();document.body.classList.remove('alm-online-ready');onlineMessage('Sessão encerrada.');
+}
+async function onlineSignUp(){
+ if(!onlineClient)return onlineMessage('Biblioteca de conexão indisponível. Verifique sua internet.');
+ const email=document.getElementById('almEmail').value.trim(), password=document.getElementById('almPassword').value;
+ if(!email||password.length<6)return onlineMessage('Preencha e-mail e senha com pelo menos 6 caracteres.');
+ onlineMessage('Criando conta...');
+ const {data,error}=await onlineClient.auth.signUp({email,password});
+ if(error)return onlineMessage(error.message);
+ onlineMessage(data.session?'Conta criada. Verificando autorização...':'Cadastro solicitado. Confira seu e-mail para confirmar a conta. O administrador deverá liberar seu perfil antes das operações.');
+ if(data.session)await onlineEnter();
+}
+async function onlineResetPassword(){
+ const email=document.getElementById('almEmail').value.trim();
+ if(!email)return onlineMessage('Informe seu e-mail antes de solicitar a recuperação.');
+ const {error}=await onlineClient.auth.resetPasswordForEmail(email);
+ onlineMessage(error?error.message:'Se esse e-mail estiver cadastrado, você receberá instruções para recuperar o acesso.');
+}
+async function onlineEnter(){
+ const {data,error}=await onlineClient.auth.getUser();
+ if(error||!data?.user){document.body.classList.remove('alm-online-ready');return;}
+ const {data:profile,error:pe}=await onlineClient.from('alm_usuarios').select('id,nome,perfil,ativo').eq('id',data.user.id).maybeSingle();
+ if(pe||!profile||!profile.ativo){document.body.classList.remove('alm-online-ready');onlineMessage('Conta sem perfil autorizado. Solicite liberação ao administrador.');return;}
+ onlineProfile=profile;
+ document.getElementById('almOnlineUser').textContent=data.user.email||profile.nome||'Usuário';
+ document.getElementById('almOnlineRole').textContent='Perfil: '+profile.perfil.toUpperCase();
+ try{await loadOnline();document.body.classList.add('alm-online-ready');}
+ catch(e){document.body.classList.remove('alm-online-ready');onlineMessage('Falha ao carregar estoque: '+(e.message||e));}
+}
+async function onlineReadAll(table,columns){
+ const rows=[];let start=0;const chunk=500;
+ for(;;){
+  const {data,error}=await onlineClient.from(table).select(columns).range(start,start+chunk-1);
+  if(error)throw error;
+  rows.push(...(data||[]));
+  if(!data||data.length<chunk)break;
+  start+=chunk;
+  if(start>100000)throw new Error('Limite de consulta atingido. Consulte o administrador.');
+ }
+ return rows;
+}
+async function loadOnline(){
+ if(!onlineClient||onlineBusy)return;
+ onlineBusy=true;
+ try{
+  const [pat,notes,items,moves,refs]=await Promise.all([
+   onlineReadAll('alm_patrimonios','id,codigo'),
+   onlineReadAll('alm_notas','id,patrimonio_id,numero,solicitante,data_recebimento,observacao'),
+   onlineReadAll('alm_itens','id,nota_id,cod_int,cod_equivalente,descricao,unidade,armazem,quantidade_entrada,saldo,observacao'),
+   onlineReadAll('alm_movimentacoes','id,item_id,tipo,responsavel,criado_em,quantidade'),
+   onlineReadAll('alm_catalogo','id,cod_int,cod_equivalente,descricao,unidade,armazem')
+  ]);
+  const patMap=new Map(pat.map(x=>[x.id,x]));const noteMap=new Map(notes.map(x=>[x.id,x]));
+  const withdrawn=new Map();
+  for(const m of moves){if(m.tipo==='BAIXA'&&(!withdrawn.has(m.item_id)||m.criado_em>withdrawn.get(m.item_id).criado_em))withdrawn.set(m.item_id,m);}
+  db.stock=items.map(i=>{
+   const n=noteMap.get(i.nota_id),p=n?patMap.get(n.patrimonio_id):null;
+   return {online_id:i.id,patrimonio:p?.codigo||'',nf:n?.numero||'',cod_int:i.cod_int,cod_equivalente:i.cod_equivalente,
+    nome_produto:i.descricao,qntd:Number(i.saldo),data_recebimento:n?.data_recebimento||'',retirado:withdrawn.get(i.id)?.responsavel||'',
+    observacao:n?.solicitante||'',solicitante:n?.solicitante||'',unidade:i.unidade,armazem:i.armazem};
+  });
+  db.refs=refs.map(r=>({codigo_interno:r.cod_int,cod_equivalente:r.cod_equivalente,descricao:r.descricao,unidade:r.unidade,armazem:r.armazem}));
+  db.withdrawalHistory=moves.filter(x=>x.tipo==='BAIXA');
+  stockSelection.clear();closeBatchWithdrawal();refreshAll();
+  document.querySelectorAll('[data-screen="entrada"],#batchActionButton').forEach(x=>{x.title=canOperate()?'':'Seu perfil permite apenas consultar';});
+  document.getElementById('almOnlineStatus').querySelector('strong').textContent='● ESTOQUE ONLINE — '+items.length+' ITENS';
+ } finally{onlineBusy=false;}
+}
+async function initOnline(){
+ if(!window.supabase?.createClient){onlineMessage('Biblioteca Supabase não carregou. Verifique sua conexão e atualize a página.');return;}
+ onlineClient=window.supabase.createClient(ALM_SUPABASE_URL,ALM_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ document.getElementById('almAuthForm').addEventListener('submit',async e=>{
+  e.preventDefault();const btn=document.getElementById('almLoginButton');btn.disabled=true;onlineMessage('Autenticando...');
+  try{
+   const {error}=await onlineClient.auth.signInWithPassword({email:document.getElementById('almEmail').value.trim(),password:document.getElementById('almPassword').value});
+   document.getElementById('almPassword').value='';
+   if(error)onlineMessage(error.message);else await onlineEnter();
+  }catch(err){onlineMessage(err.message||String(err))}finally{btn.disabled=false;}
+ });
+ const {data:{session}}=await onlineClient.auth.getSession();
+ if(session)await onlineEnter();else onlineMessage('Use seu login. Novas contas iniciam como leitor e precisam de autorização para movimentações.');
+}
+// Substitui gravações locais por transações atômicas no Supabase.
+saveEntries=async function(){
+ if(!canOperate())return alert('Seu perfil não tem permissão para cadastrar entradas.');
+ if(onlineBusy)return alert('Aguarde a atualização anterior.');
+ const pat=clean(document.getElementById('entryPatrimonio').value),nf=clean(document.getElementById('entryNF').value),sol=clean(document.getElementById('entrySolicitante').value),date=clean(document.getElementById('entryDate').value);
+ const lines=entryLines.map(r=>({cod_int:clean(r.cod_int),cod_equivalente:clean(r.cod_equiv),descricao:clean(r.nome_produto),quantidade:parseNum(r.qntd),unidade:r.unidade||'UN',armazem:r.armazem||''}));
+ if(!pat||!nf||!sol||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!lines.length||lines.some(x=>!(x.cod_int||x.cod_equivalente)||!x.descricao||!Number.isFinite(x.quantidade)||x.quantidade<=0))return alert('Confira patrimônio, nota, solicitante, data e os códigos, descrições e quantidades positivas de todos os produtos.');
+ if(!confirm('Confirmar entrada online de '+lines.length+' produto(s) na NF '+nf+' do patrimônio '+pat+'?'))return;
+ const {data,error}=await onlineClient.rpc('alm_registrar_entrada',{p_patrimonio:pat,p_nf:nf,p_solicitante:sol,p_data:date,p_itens:lines});
+ if(error)return onlineFail(error);
+ entryLines=[];['entryPatrimonio','entryNF','entrySolicitante'].forEach(id=>document.getElementById(id).value='');clearPastedItems();document.getElementById('entryDate').value=localToday();
+ try{await loadOnline();alert(data+' produto(s) cadastrados online com sucesso.');}catch(err){onlineFail(err);}
+};
+confirmBatchWithdrawal=async function(){
+ if(!canOperate())return alert('Seu perfil não tem permissão para realizar baixas.');
+ const who=clean(document.getElementById('batchWho').value),reason=clean(document.getElementById('batchReason').value);
+ if(!who||!batchWithdrawalDraft.length)return alert('Informe o responsável e selecione os itens.');
+ const items=[];
+ for(const d of batchWithdrawalDraft){const row=db.stock[d.index],quantity=Number(String(d.amount).replace(',','.'));if(!row?.online_id||!Number.isFinite(quantity)||quantity<=0||quantity>parseNum(row.qntd))return alert('Há uma quantidade inválida ou maior que o saldo disponível.');items.push({id:row.online_id,quantidade:quantity});}
+ if(!confirm('Registrar baixa online de '+items.length+' item(ns) para '+who+'?'))return;
+ const {data,error}=await onlineClient.rpc('alm_registrar_baixa_lote',{p_itens:items,p_responsavel:who,p_observacao:reason});
+ if(error){await loadOnline().catch(console.error);return onlineFail(error);}
+ await loadOnline();document.getElementById('batchWho').value='';document.getElementById('batchReason').value='';alert(data+' item(ns) baixados e registrados no histórico online.');
+};
+addStockRow=function(){if(!canOperate())return alert('Seu perfil permite apenas consultar.');document.querySelector('[data-screen="entrada"]').click();addEntryLine();alert('Cadastre novos itens pelo Cadastro de Entrada, com patrimônio e nota fiscal para manter o histórico.');};
+openStockEditor=function(i){const r=db.stock[i];if(!r)return;alert('Registro online protegido. Para manter a auditoria, a edição direta de saldo e dados está desativada nesta etapa. Use Cadastro de Entrada para novos produtos e Baixa em Lote para retiradas.');};
+saveStockEditor=function(){alert('Edição direta desabilitada na versão online.');};
+editStock=function(){alert('Edição direta desabilitada na versão online.');};
+deleteStock=function(){alert('Exclusão direta desabilitada para preservar o histórico.');};
+withdraw=function(){alert('Utilize a Baixa em Lote para registrar movimentações auditadas.');};
+importFile=function(e){e.target.value='';alert('Importação online ainda não habilitada: os dados locais serão migrados com backup, validação e conferência de saldos. Nenhum registro foi apagado.');};
+
+// Inicialização remota substitui a renderização local.
+initOnline();
 </script>
 </body></html>
