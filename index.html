@@ -94,7 +94,8 @@ body.alm-online-ready #almAuthOverlay{display:none}
  <form id="almAuthForm"><label for="almEmail">E-mail</label><input id="almEmail" type="email" autocomplete="username" required placeholder="seu@email.com">
  <label for="almPassword">Senha</label><input id="almPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Sua senha">
  <button class="btn" id="almLoginButton" type="submit">Entrar no Almoxarifado</button></form>
- <div class="alm-auth-actions"><button type="button" onclick="onlineSignUp()">Criar minha conta</button><button type="button" onclick="onlineResetPassword()">Recuperar senha</button></div>
+ <div class="alm-auth-actions"><button type="button" onclick="onlineSignUp()">Cadastrar novo usuário</button><button type="button" onclick="onlineResetPassword()">Esqueci minha senha</button></div>
+ <p style="font-size:12px;color:#a9c4b2;margin:10px 0 0">Já tem uma conta? Digite sua senha e clique em <strong>Entrar no Almoxarifado</strong>. Não utilize “Cadastrar novo usuário”.</p>
  <div id="almAuthMessage" aria-live="polite"></div>
  </div>
 </div>
@@ -641,7 +642,7 @@ async function onlineSignUp(){
  onlineMessage('Criando conta...');
  const {data,error}=await onlineClient.auth.signUp({email,password});
  if(error)return onlineMessage(error.message);
- onlineMessage(data.session?'Conta criada. Verificando autorização...':'Cadastro solicitado. Confira seu e-mail para confirmar a conta. O administrador deverá liberar seu perfil antes das operações.');
+ onlineMessage(data.session?'Conta criada. Verificando autorização...':'Solicitação enviada. Se for um cadastro novo, confira o e-mail. Se já tiver conta, volte e use “Entrar no Almoxarifado”; esta ação não faz login.');
  if(data.session)await onlineEnter();
 }
 async function onlineResetPassword(){
@@ -708,7 +709,7 @@ async function initOnline(){
   try{
    const {error}=await onlineClient.auth.signInWithPassword({email:document.getElementById('almEmail').value.trim(),password:document.getElementById('almPassword').value});
    document.getElementById('almPassword').value='';
-   if(error)onlineMessage(error.message);else await onlineEnter();
+   if(error)onlineMessage(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos. Se já tem conta, não clique em Cadastrar novo usuário. Use Esqueci minha senha se necessário.' : error.message);else await onlineEnter();
   }catch(err){onlineMessage(err.message||String(err))}finally{btn.disabled=false;}
  });
  const {data:{session}}=await onlineClient.auth.getSession();
