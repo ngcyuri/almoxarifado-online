@@ -97,6 +97,14 @@ body.alm-online-ready #almAuthOverlay{display:none}
  <div class="alm-auth-actions"><button type="button" onclick="onlineSignUp()">Cadastrar novo usuário</button><button type="button" onclick="onlineResetPassword()">Esqueci minha senha</button></div>
  <p style="font-size:12px;color:#a9c4b2;margin:10px 0 0">Já tem uma conta? Digite sua senha e clique em <strong>Entrar no Almoxarifado</strong>. Não utilize “Cadastrar novo usuário”.</p>
  <div id="almAuthMessage" aria-live="polite"></div>
+ <form id="almRecoveryForm" style="display:none;margin-top:16px">
+   <p style="color:#c9e4d4;font-size:13px">Link de recuperação validado. Defina sua nova senha.</p>
+   <label for="almNewPassword">Nova senha (mínimo 8 caracteres)</label>
+   <input id="almNewPassword" type="password" autocomplete="new-password" minlength="8" required>
+   <label for="almNewPasswordConfirm">Confirme a nova senha</label>
+   <input id="almNewPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required>
+   <button class="btn" type="submit">Salvar nova senha</button>
+ </form>
  </div>
 </div>
 <div class="app">
@@ -648,8 +656,8 @@ async function onlineSignUp(){
 async function onlineResetPassword(){
  const email=document.getElementById('almEmail').value.trim();
  if(!email)return onlineMessage('Informe seu e-mail antes de solicitar a recuperação.');
- const {error}=await onlineClient.auth.resetPasswordForEmail(email);
- onlineMessage(error?error.message:'Se esse e-mail estiver cadastrado, você receberá instruções para recuperar o acesso.');
+ const {error}=await onlineClient.auth.resetPasswordForEmail(email,{redirectTo:'https://ngcyuri.github.io/almoxarifado-online/'});
+ onlineMessage(error?(error.message.includes('rate limit')?'O Supabase limitou temporariamente o envio de e-mails. Não repita o pedido; configure o SMTP do projeto ou tente novamente depois.':error.message):'Se o e-mail estiver cadastrado e o envio estiver disponível, você receberá um link. Abra-o para definir uma nova senha.');
 }
 async function onlineEnter(){
  const {data,error}=await onlineClient.auth.getUser();
@@ -704,6 +712,27 @@ async function loadOnline(){
 async function initOnline(){
  if(!window.supabase?.createClient){onlineMessage('Biblioteca Supabase não carregou. Verifique sua conexão e atualize a página.');return;}
  onlineClient=window.supabase.createClient(ALM_SUPABASE_URL,ALM_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ let recoveryMode=false;
+ const openRecovery=()=>{recoveryMode=true;document.getElementById('almAuthForm').style.display='none';document.querySelector('.alm-auth-actions').style.display='none';document.getElementById('almRecoveryForm').style.display='block';document.body.classList.remove('alm-online-ready');onlineMessage('Informe e confirme a nova senha.');};
+ onlineClient.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY')openRecovery();});
+ document.getElementById('almRecoveryForm').addEventListener('submit',async e=>{
+   e.preventDefault();
+   const pass=document.getElementById('almNewPassword').value;
+   const conf=document.getElementById('almNewPasswordConfirm').value;
+   if(pass.length<8||pass!==conf)return onlineMessage('A senha precisa ter ao menos 8 caracteres e as duas senhas devem ser iguais.');
+   const btn=e.currentTarget.querySelector('button[type="submit"]');btn.disabled=true;
+   try{
+     const {error}=await onlineClient.auth.updateUser({password:pass});
+     if(error)return onlineMessage('Não foi possível atualizar a senha: '+error.message);
+     e.currentTarget.reset();e.currentTarget.style.display='none';
+     document.getElementById('almAuthForm').style.display='';
+     document.querySelector('.alm-auth-actions').style.display='';
+     recoveryMode=false;
+     onlineMessage('Senha alterada com sucesso. Entre no Almoxarifado com a nova senha.');
+     await onlineClient.auth.signOut();
+   }catch(err){onlineMessage('Erro ao atualizar senha: '+(err.message||err))}
+   finally{btn.disabled=false;}
+ });
  document.getElementById('almAuthForm').addEventListener('submit',async e=>{
   e.preventDefault();const btn=document.getElementById('almLoginButton');btn.disabled=true;onlineMessage('Autenticando...');
   try{
@@ -713,7 +742,7 @@ async function initOnline(){
   }catch(err){onlineMessage(err.message||String(err))}finally{btn.disabled=false;}
  });
  const {data:{session}}=await onlineClient.auth.getSession();
- if(session)await onlineEnter();else onlineMessage('Use seu login. Novas contas iniciam como leitor e precisam de autorização para movimentações.');
+ if(session&&!recoveryMode)await onlineEnter();else if(!recoveryMode)onlineMessage('Entre com sua conta. Se esqueceu a senha, use Esqueci minha senha.');
 }
 // Substitui gravações locais por transações atômicas no Supabase.
 saveEntries=async function(){
